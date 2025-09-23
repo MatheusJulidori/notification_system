@@ -1,0 +1,170 @@
+version: '3.9'
+
+env_file:
+  - .env
+services:
+
+  db:
+    image: postgres:17.4-alpine
+    container_name: unified-notifications-db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../../
+      dockerfile: ./docker/development/Dockerfile
+    logging:
+      driver: "loki"
+      options:
+        loki-batch-size: "400"
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-retries: "2"
+        loki-max-backoff: "1000ms"
+    container_name: unified-notifications-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATABASE_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - unified-notifications-network
+
+  redis:
+    image: redis:8.2-alpine
+    container_name: unified-notifications-redis
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    container_name: unified-notifications-rabbitmq
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    container_name: unified-notifications-prometheus
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/configs/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - api 
+
+  grafana:
+    image: grafana/grafana:11.5.9
+    container_name: unified-notifications-grafana
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:main-7fc404c
+    container_name: unified-notifications-loki
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./docker/configs/loki-config.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:main-7fc404c
+    container_name: unified-notifications-promtail
+    restart: unless-stopped
+    networks:
+      - unified-notifications-network
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/configs/promtail-config.yml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  unified-notifications-network:
+    driver: bridge
