@@ -21,7 +21,7 @@ scrape_configs:
         filters:
           - name: label
             values:
-              - "com.docker.compose.project=unified-notifications"
+              - "com.docker.compose.service=api"
     relabel_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
