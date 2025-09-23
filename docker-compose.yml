@@ -2,16 +2,8 @@ version: '3.9'
 services:
 
   db:
-    image: postgres:17.4-alpine
+    image: postgres:17-alpine
     container_name: unified-notifications-db
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -23,8 +15,6 @@ services:
     restart: unless-stopped
     networks:
       - unified-notifications-network
-    env_file:
-      - ../../.env
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -34,8 +24,8 @@ services:
 
   api:
     build:
-      context: ../../
-      dockerfile: ./docker/development/Dockerfile
+      context: .
+      dockerfile: ./Dockerfile
     logging:
       driver: "loki"
       options:
@@ -46,9 +36,7 @@ services:
     container_name: unified-notifications-api
     restart: unless-stopped
     ports:
-      - "4000:4000"
-    env_file:
-      - ../../.env
+      - "4001:4001"
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
@@ -58,7 +46,7 @@ services:
       - REDIS_HOST=redis
       - RABBITMQ_HOST=rabbitmq
     volumes:
-      - ../../:/app
+      - .:/app
       - /app/node_modules
     depends_on:
       db:
@@ -111,7 +99,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./docker/configs/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
     command: --config.file=/etc/prometheus/prometheus.yml
     depends_on:
       - api 
@@ -124,14 +112,18 @@ services:
       - unified-notifications-network
     ports:
       - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
       - loki
 
   loki:
-    image: grafana/loki:main-7fc404c
+    image: grafana/loki:2.9.8
     container_name: unified-notifications-loki
     restart: unless-stopped
     networks:
@@ -139,11 +131,11 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./docker/configs/loki-config.yml:/etc/loki/local-config.yaml
+      - ./configs/loki-config.yml:/etc/loki/local-config.yaml
     command: -config.file=/etc/loki/local-config.yaml
 
   promtail:
-    image: grafana/promtail:main-7fc404c
+    image: grafana/promtail:2.9.8
     container_name: unified-notifications-promtail
     restart: unless-stopped
     networks:
@@ -151,7 +143,7 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./docker/configs/promtail-config.yml:/etc/promtail/config.yaml
+      - ./configs/promtail-config.yml:/etc/promtail/config.yaml
     command: -config.file=/etc/promtail/config.yaml
     depends_on:
       - loki
@@ -159,11 +151,8 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
   rabbitmq_data:
-    driver: local
   grafana_data:
-    driver: local
 
 networks:
   unified-notifications-network:

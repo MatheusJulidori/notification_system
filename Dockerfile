@@ -8,6 +8,6 @@ RUN npm ci
 
 COPY . .
 
-EXPOSE 4000 9229
+EXPOSE 4001 9229
 
 CMD ["npm", "run", "start:debug"]
