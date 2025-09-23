@@ -1,7 +1,4 @@
 version: '3.9'
-
-env_file:
-  - .env
 services:
 
   db:
@@ -26,6 +23,8 @@ services:
     restart: unless-stopped
     networks:
       - unified-notifications-network
+    env_file:
+      - ../../.env
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -48,13 +47,14 @@ services:
     restart: unless-stopped
     ports:
       - "4000:4000"
+    env_file:
+      - ../../.env
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - DATABASE_USER=${DB_USER}
       - DATABASE_PASSWORD=${DB_PASSWORD}
       - DATABASE_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
       - RABBITMQ_HOST=rabbitmq
     volumes:
