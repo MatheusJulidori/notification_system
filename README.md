@@ -7,7 +7,7 @@ The API can be integrated into various applications to manage and send notificat
 
 ---
 
-## 🚀 **Technologies & Tools**
+## **Technologies & Tools**
 
 * **Backend:** NestJS (TypeScript)
 * **Database:** PostgreSQL
@@ -24,7 +24,7 @@ The API can be integrated into various applications to manage and send notificat
 
 ---
 
-## 🔑 **Key Features**
+## **Key Features**
 
 * **Secure Authentication:** API Key–based access control.
 * **Asynchronous Processing:** Notifications are queued via RabbitMQ for non-blocking performance.
@@ -36,10 +36,11 @@ The API can be integrated into various applications to manage and send notificat
 
 ---
 
-## 🔐 **Security Features**
+## **Security Features**
 
 * **Helmet** – Adds HTTP headers to protect against common web vulnerabilities.
 * **CSRF Protection** – Mitigates Cross-Site Request Forgery (`csrf-csrf`).
+* **JWT Authentication** - Enforces security on user management.
 * **API Key Authentication** – Enforces secure access to endpoints.
 * **Rate Limiting & Throttling** – `@nestjs/throttler` prevents brute-force and abuse attacks.
 * **Input Validation & Sanitization** – Ensured by `class-validator` & `class-transformer`.
@@ -49,7 +50,7 @@ The API can be integrated into various applications to manage and send notificat
 
 ---
 
-## ⚙️ **Getting Started**
+## **Getting Started**
 
 Follow these steps to set up and run the project locally.
 
@@ -104,7 +105,7 @@ Follow these steps to set up and run the project locally.
 
 ---
 
-## 📖 **API Documentation**
+## **API Documentation**
 
 Swagger docs are auto-generated.
 Once running, access at:
@@ -115,7 +116,7 @@ http://localhost:[port]/api
 
 ---
 
-## 🧪 **Running Tests**
+## **Running Tests**
 
 Run unit and integration tests with:
 
@@ -125,7 +126,7 @@ npm run test
 
 ---
 
-## 📊 **Observability**
+## **Observability**
 
 This project ships with **Prometheus + Grafana + Loki** for a full observability stack.
 
@@ -204,7 +205,3 @@ For production deployments:
 * [LinkedIn](https://www.linkedin.com/in/matheusjulidori)
 * [GitHub](https://github.com/MatheusJulidori)
 * [Portfolio](https://julidori.dev/)
-
----
-
-Would you like me to **inline the Prometheus & Grafana configs into your `docker-compose.yml`**, so people don’t even need to copy YAML or dashboards manually, or do you prefer keeping those external to the repo?
