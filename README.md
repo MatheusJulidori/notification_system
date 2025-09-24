@@ -1,7 +1,3 @@
-Great — here’s your **README extended with Prometheus & Grafana setup**, so someone cloning your repo can bootstrap observability without guessing configs.
-
----
-
 # Unified Notification Microservice API
 
 This project is a **robust and scalable backend API** designed to handle and process notifications asynchronously.
@@ -113,7 +109,7 @@ Follow these steps to set up and run the project locally.
 Swagger docs are auto-generated.
 Once running, access at:
 
-```
+```text
 http://localhost:[port]/api
 ```
 
