@@ -17,7 +17,14 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d database.config.ts",
+    "migration:create": "typeorm-ts-node-commonjs migration:create -d database.config.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d database.config.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d database.config.ts",
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d database.config.ts",
+    "schema:drop": "typeorm-ts-node-commonjs schema:drop -d database.config.ts",
+    "seed:run": "ts-node src/shared/database/seeds/initial-data.seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -28,6 +35,7 @@
     "@nestjs/passport": "11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "11.2.0",
+    "@nestjs/terminus": "11.0.0",
     "@nestjs/throttler": "6.4.0",
     "@nestjs/typeorm": "11.0.0",
     "@willsoto/nestjs-prometheus": "6.0.2",
@@ -40,6 +48,7 @@
     "ioredis": "5.8.0",
     "nestjs-pino": "4.4.1",
     "passport": "0.7.0",
+    "passport-custom": "1.1.1",
     "passport-jwt": "4.0.1",
     "pg": "8.16.3",
     "pino-http": "10.5.0",
