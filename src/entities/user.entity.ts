@@ -26,6 +26,9 @@ export class User {
     @Column({ length: 20, nullable: true })
     phone?: string;
 
+    @Column({ name: 'password_hash', length: 255 })
+    passwordHash: string;
+
     @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
     status: UserStatus;
 
