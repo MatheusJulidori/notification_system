@@ -1,159 +1,167 @@
 version: '3.9'
 services:
+    db:
+        image: postgres:17-alpine
+        container_name: unified-notifications-db
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        ports:
+            - '${DB_EXTERNAL_PORT}:${DB_PORT}'
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        environment:
+            - POSTGRES_USER=${DB_USER}
+            - POSTGRES_PASSWORD=${DB_PASSWORD}
+            - POSTGRES_DB=${DB_NAME}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
 
-  db:
-    image: postgres:17-alpine
-    container_name: unified-notifications-db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    ports:
-      - "5433:5432"
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    api:
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        logging:
+            driver: 'loki'
+            options:
+                loki-batch-size: '400'
+                loki-url: 'http://loki:3100/loki/api/v1/push'
+                loki-retries: '2'
+                loki-max-backoff: '1000ms'
+        container_name: unified-notifications-api
+        restart: unless-stopped
+        ports:
+            - '${PORT}:${PORT}'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - PORT=${PORT}
+            - DB_HOST=${DB_HOST}
+            - DB_PORT=${DB_PORT}
+            - DB_USER=${DB_USER}
+            - DB_PASSWORD=${DB_PASSWORD}
+            - DB_NAME=${DB_NAME}
+            - DB_SCHEMA=${DB_SCHEMA}
+            - DB_POOL_SIZE=${DB_POOL_SIZE}
+            - DB_CONNECTION_TIMEOUT=${DB_CONNECTION_TIMEOUT}
+            - DB_IDLE_TIMEOUT=${DB_IDLE_TIMEOUT}
+            - DB_MAX_QUERY_EXECUTION_TIME=${DB_MAX_QUERY_EXECUTION_TIME}
+            - DB_SYNCHRONIZE=${DB_SYNCHRONIZE}
+            - AUTO_RUN_MIGRATIONS=${AUTO_RUN_MIGRATIONS}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+        volumes:
+            - .:/app
+            - /app/node_modules
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        networks:
+            - unified-notifications-network
 
-  api:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    logging:
-      driver: "loki"
-      options:
-        loki-batch-size: "400"
-        loki-url: "http://loki:3100/loki/api/v1/push"
-        loki-retries: "2"
-        loki-max-backoff: "1000ms"
-    container_name: unified-notifications-api
-    restart: unless-stopped
-    ports:
-      - "4001:4001"
-    environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-      - DATABASE_USER=${DB_USER}
-      - DATABASE_PASSWORD=${DB_PASSWORD}
-      - DATABASE_NAME=${DB_NAME}
-      - REDIS_HOST=redis
-      - RABBITMQ_HOST=rabbitmq
-    volumes:
-      - .:/app
-      - /app/node_modules
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - unified-notifications-network
+    redis:
+        image: redis:8.2-alpine
+        container_name: unified-notifications-redis
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        healthcheck:
+            test: ['CMD-SHELL', 'redis-cli ping']
+            interval: 5s
+            timeout: 3s
+            retries: 3
+        ports:
+            - '${REDIS_PORT}:${REDIS_PORT}'
 
-  redis:
-    image: redis:8.2-alpine
-    container_name: unified-notifications-redis
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-    ports:
-      - "6379:6379"
+    rabbitmq:
+        image: rabbitmq:4.1-management-alpine
+        healthcheck:
+            test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        container_name: unified-notifications-rabbitmq
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        ports:
+            - '${RABBITMQ_PORT}:${RABBITMQ_PORT}'
+            - '${RABBITMQ_MANAGER_PORT}:${RABBITMQ_MANAGER_PORT}'
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
 
-  rabbitmq:
-    image: rabbitmq:4.1-management-alpine
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    container_name: unified-notifications-rabbitmq
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+    prometheus:
+        image: prom/prometheus:v3.6.0
+        container_name: unified-notifications-prometheus
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        ports:
+            - '${PROMETHEUS_PORT}:${PROMETHEUS_PORT}'
+        volumes:
+            - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+        command: --config.file=/etc/prometheus/prometheus.yml
+        depends_on:
+            - api
 
-  prometheus:
-    image: prom/prometheus:v3.6.0
-    container_name: unified-notifications-prometheus
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
-    command: --config.file=/etc/prometheus/prometheus.yml
-    depends_on:
-      - api 
+    grafana:
+        image: grafana/grafana:11.5.9
+        container_name: unified-notifications-grafana
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        ports:
+            - '${GRAFANA_EXTERNAL_PORT}:${GRAFANA_PORT}'
+        environment:
+            - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+            - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./configs/grafana/provisioning:/etc/grafana/provisioning
+        depends_on:
+            - prometheus
+            - loki
 
-  grafana:
-    image: grafana/grafana:11.5.9
-    container_name: unified-notifications-grafana
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./configs/grafana/provisioning:/etc/grafana/provisioning
-    depends_on:
-      - prometheus
-      - loki
+    loki:
+        image: grafana/loki:2.9.8
+        container_name: unified-notifications-loki
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        ports:
+            - '${LOKI_PORT}:${LOKI_PORT}'
+        volumes:
+            - ./configs/loki-config.yml:/etc/loki/local-config.yaml
+        command: -config.file=/etc/loki/local-config.yaml
 
-  loki:
-    image: grafana/loki:2.9.8
-    container_name: unified-notifications-loki
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./configs/loki-config.yml:/etc/loki/local-config.yaml
-    command: -config.file=/etc/loki/local-config.yaml
-
-  promtail:
-    image: grafana/promtail:2.9.8
-    container_name: unified-notifications-promtail
-    restart: unless-stopped
-    networks:
-      - unified-notifications-network
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./configs/promtail-config.yml:/etc/promtail/config.yaml
-    command: -config.file=/etc/promtail/config.yaml
-    depends_on:
-      - loki
-
+    promtail:
+        image: grafana/promtail:2.9.8
+        container_name: unified-notifications-promtail
+        restart: unless-stopped
+        networks:
+            - unified-notifications-network
+        volumes:
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./configs/promtail-config.yml:/etc/promtail/config.yaml
+        command: -config.file=/etc/promtail/config.yaml
+        depends_on:
+            - loki
 
 volumes:
-  postgres_data:
-  rabbitmq_data:
-  grafana_data:
+    postgres_data:
+    rabbitmq_data:
+    grafana_data:
 
 networks:
-  unified-notifications-network:
-    driver: bridge
+    unified-notifications-network:
+        driver: bridge
