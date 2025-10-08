@@ -1,8 +1,12 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as dotenv from 'dotenv';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import {
+    ClassSerializerInterceptor,
+    Logger,
+    ValidationPipe,
+} from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import helmet from 'helmet';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -47,6 +51,11 @@ async function bootstrap() {
 
     app.useLogger(logger);
     app.useGlobalInterceptors(new LoggingInterceptor(pinoLogger));
+
+    // Enable class-transformer for automatic serialization (excludes @Exclude() fields)
+    app.useGlobalInterceptors(
+        new ClassSerializerInterceptor(app.get(Reflector)),
+    );
 
     app.useGlobalPipes(
         new ValidationPipe({
