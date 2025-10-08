@@ -57,7 +57,6 @@ Follow these steps to set up and run the project locally.
 ### **Prerequisites**
 
 * Docker & Docker Compose
-* Node.js + npm
 
 ---
 
