@@ -16,9 +16,13 @@ import {
 import { ApiKey } from './api-key.entity';
 
 @Entity('notifications')
-@Index(['userId', 'status'])
+@Index(['userId'])
+@Index(['apiKeyId'])
 @Index(['status'])
+@Index(['type'])
+@Index(['createdAt'])
 @Index(['nextRetryAt'])
+@Index(['userId', 'status'])
 export class Notification {
     @PrimaryGeneratedColumn('uuid')
     id: string;

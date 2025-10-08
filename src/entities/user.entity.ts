@@ -14,6 +14,9 @@ import { Notification } from './notification.entity';
 
 @Entity('users')
 @Index(['username'])
+@Index(['email'])
+@Index(['status'])
+@Index(['activationToken'])
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -37,7 +40,11 @@ export class User {
     @Column({ name: 'activation_token', length: 6, nullable: true })
     activationToken?: string | null;
 
-    @Column({ name: 'activation_token_expires', type: 'timestamp', nullable: true })
+    @Column({
+        name: 'activation_token_expires',
+        type: 'timestamp',
+        nullable: true,
+    })
     activationTokenExpires?: Date | null;
 
     @CreateDateColumn({ type: 'timestamp' })

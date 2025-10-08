@@ -11,8 +11,9 @@ import { User } from './user.entity';
 import { ApiKeyStatus } from '../common/enums/api-key';
 
 @Entity('api_keys')
-@Index(['keyHash'])
 @Index(['userId'])
+@Index(['keyHash'])
+@Index(['status'])
 export class ApiKey {
     @PrimaryGeneratedColumn('uuid')
     id: string;
