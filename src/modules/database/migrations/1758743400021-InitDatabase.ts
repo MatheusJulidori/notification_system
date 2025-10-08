@@ -326,6 +326,14 @@ export class InitDatabase1758743400021 implements MigrationInterface {
             }),
         );
 
+        await queryRunner.createIndex(
+            'users',
+            new TableIndex({
+                name: 'idx_users_activation_token',
+                columnNames: ['activation_token'],
+            }),
+        );
+
         // API Keys Indexes
         await queryRunner.createIndex(
             'api_keys',

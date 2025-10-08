@@ -87,13 +87,14 @@ export class UserService {
         return user;
     }
 
-    async findByUsername(username: string): Promise<User> {
+    async findByUsername(username: string): Promise<User | null> {
         this.logger.logMethodEntry('findByUsername', { username });
         const user = await this.userRepository.findOne({
             where: { username },
         });
         if (!user) {
-            throw new NotFoundException('User not found');
+            this.logger.log('No user found with username');
+            return null;
         }
         this.logger.logDatabaseOperation('SELECT', 'User', { username });
         this.logger.log(`User found: ${user.username}`);
@@ -157,13 +158,14 @@ export class UserService {
         return isAvailable;
     }
 
-    async findByActivationToken(token: string): Promise<User> {
+    async findByActivationToken(token: string): Promise<User | null> {
         this.logger.logMethodEntry('findByActivationToken', { token });
         const user = await this.userRepository.findOne({
             where: { activationToken: token },
         });
         if (!user) {
-            throw new NotFoundException('User not found');
+            this.logger.log('No user found with activation token');
+            return null;
         }
         this.logger.logDatabaseOperation('SELECT', 'User', { token });
         this.logger.log(`User found: ${user.id}`);
