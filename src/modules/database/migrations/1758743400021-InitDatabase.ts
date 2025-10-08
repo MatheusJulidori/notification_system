@@ -55,6 +55,17 @@ export class InitDatabase1758743400021 implements MigrationInterface {
                         default: "'ACTIVE'",
                     },
                     {
+                        name: 'activation_token',
+                        type: 'varchar',
+                        length: '6',
+                        isNullable: true,
+                    },
+                    {
+                        name: 'activation_token_expires',
+                        type: 'timestamp',
+                        isNullable: true,
+                    },
+                    {
                         name: 'created_at',
                         type: 'timestamp',
                         default: 'CURRENT_TIMESTAMP',

@@ -7,6 +7,7 @@ import {
     UpdateDateColumn,
     OneToMany,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { UserStatus } from '../common/enums/user';
 import { ApiKey } from './api-key.entity';
 import { Notification } from './notification.entity';
@@ -26,11 +27,18 @@ export class User {
     @Column({ length: 20, nullable: true })
     phone?: string;
 
+    @Exclude()
     @Column({ name: 'password_hash', length: 255 })
     passwordHash: string;
 
     @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
     status: UserStatus;
+
+    @Column({ name: 'activation_token', length: 6, nullable: true })
+    activationToken?: string | null;
+
+    @Column({ name: 'activation_token_expires', type: 'timestamp', nullable: true })
+    activationTokenExpires?: Date | null;
 
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
