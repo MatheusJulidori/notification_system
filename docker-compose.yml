@@ -33,6 +33,7 @@ services:
                 loki-max-backoff: '1000ms'
         container_name: unified-notifications-api
         restart: unless-stopped
+        stop_grace_period: 30s
         ports:
             - '${PORT}:${PORT}'
         environment:

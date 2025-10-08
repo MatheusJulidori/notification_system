@@ -121,11 +121,37 @@ async function bootstrap() {
     });
 
     const port = process.env.PORT || 4001;
-    console.log(`Server is running on port: ${port}`);
-    console.log(
+
+    // Enable graceful shutdown hooks
+    app.enableShutdownHooks();
+
+    await app.listen(port);
+
+    logger.log(`Server is running on port: ${port}`);
+    logger.log(
         `Swagger documentation available at: http://localhost:${port}/api/v1/docs`,
     );
 
-    await app.listen(port);
+    // Handle graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+        logger.log(`Received ${signal} signal. Starting graceful shutdown...`);
+
+        try {
+            await app.close();
+            logger.log('Application closed gracefully');
+            process.exit(0);
+        } catch (error) {
+            logger.error('Error during graceful shutdown:', error);
+            process.exit(1);
+        }
+    };
+
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+    console.error('Error starting application:', error);
+    process.exit(1);
+});
