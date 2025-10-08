@@ -12,6 +12,7 @@ import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
     imports: [
@@ -50,6 +51,7 @@ import { UserModule } from './modules/user/user.module';
         HealthModule,
         CommonModule,
         UserModule,
+        AuthModule,
     ],
     controllers: [AppController],
     providers: [

@@ -3,25 +3,23 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../../user/services/user.service';
-import { RedisService } from '../../redis/redis.service';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { AppLoggerService } from '../../../common/services/logger.service';
 import { UserStatus } from 'src/common/enums/user';
 import { createUserDto } from 'src/modules/user/dtos/create-user.dto';
 import { User } from 'src/entities/user.entity';
+import { JwtTokenService } from './jwt-token.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private userService: UserService,
-        private jwtService: JwtService,
+        private jwtTokenService: JwtTokenService,
         private configService: ConfigService,
-        private redisService: RedisService,
         private logger: AppLoggerService,
     ) {
         this.logger.setContext(AuthService.name);
@@ -176,14 +174,12 @@ export class AuthService {
             );
         }
 
-        const tokens = await this.generateTokens(user);
+        const tokens = await this.jwtTokenService.generateTokenPair(user);
 
         this.logger.log(`User logged in successfully: ${user.id}`);
         this.logger.logMethodExit('login', { tokens });
 
-        return {
-            ...tokens,
-        };
+        return tokens;
     }
 
     async refreshToken(refreshToken: string): Promise<{
@@ -192,16 +188,9 @@ export class AuthService {
         expires_in: number;
     }> {
         this.logger.logMethodEntry('refreshToken', { refreshToken });
-        const userId = await this.redisService.get(
-            `refresh_token:${refreshToken}`,
-        );
-        if (!userId) {
-            this.logger.log(`Invalid refresh token`);
-            this.logger.logMethodExit('refreshToken', {
-                message: 'Invalid refresh token',
-            });
-            throw new UnauthorizedException('Invalid refresh token');
-        }
+
+        const userId =
+            await this.jwtTokenService.validateRefreshToken(refreshToken);
 
         const user = await this.userService.findById(userId);
         if (!user) {
@@ -211,14 +200,17 @@ export class AuthService {
             });
             throw new UnauthorizedException('User not found');
         }
-        this.logger.logDatabaseOperation('SELECT', 'User', { userId });
-        this.logger.log(`User found: ${user.id}`);
 
-        const tokens = await this.generateTokens(user);
+        if (user.status !== UserStatus.ACTIVE) {
+            this.logger.log(`Inactive user tried to refresh token: ${user.id}`);
+            throw new UnauthorizedException('Account is not active');
+        }
 
-        await this.redisService.del(`refresh_token:${refreshToken}`);
+        await this.jwtTokenService.revokeRefreshToken(refreshToken);
 
-        this.logger.log(`Refreshed token successfully`);
+        const tokens = await this.jwtTokenService.generateTokenPair(user);
+
+        this.logger.log(`Token refreshed successfully for user: ${user.id}`);
         this.logger.logMethodExit('refreshToken', { tokens });
 
         return tokens;
@@ -227,7 +219,7 @@ export class AuthService {
     async logout(refreshToken: string): Promise<{ message: string }> {
         this.logger.logMethodEntry('logout', { refreshToken });
 
-        await this.redisService.del(`refresh_token:${refreshToken}`);
+        await this.jwtTokenService.revokeRefreshToken(refreshToken);
 
         this.logger.log(`Logged out successfully`);
         this.logger.logMethodExit('logout', {
@@ -271,46 +263,6 @@ export class AuthService {
         this.logger.logMethodExit('validateUser', { user });
 
         return user;
-    }
-
-    private async generateTokens(user: any): Promise<{
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-    }> {
-        this.logger.logMethodEntry('generateTokens', { user });
-        const payload = {
-            sub: user.id,
-            username: user.username,
-            email: user.email,
-        };
-
-        const accessToken = this.jwtService.sign(payload, {
-            expiresIn: '15m',
-        });
-
-        const refreshToken = this.jwtService.sign(payload, {
-            expiresIn: '7d',
-        });
-
-        await this.redisService.setex(
-            `refresh_token:${refreshToken}`,
-            7 * 24 * 60 * 60,
-            user.id,
-        );
-
-        this.logger.log(`Tokens generated successfully`);
-        this.logger.logMethodExit('generateTokens', {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_in: 900,
-        });
-
-        return {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_in: 900,
-        };
     }
 
     private async sendActivationEmail(
