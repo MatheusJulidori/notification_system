@@ -27,10 +27,10 @@ export class Notification {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'user_id' })
+    @Column({ name: 'user_id', type: 'uuid' })
     userId: string;
 
-    @Column({ name: 'api_key_id' })
+    @Column({ name: 'api_key_id', type: 'uuid' })
     apiKeyId: string;
 
     // Content
@@ -40,10 +40,10 @@ export class Notification {
     })
     type: NotificationType;
 
-    @Column()
+    @Column({ type: 'varchar', length: '255' })
     destination: string;
 
-    @Column()
+    @Column({ type: 'varchar', length: '255' })
     title: string;
 
     @Column('text')
@@ -66,28 +66,28 @@ export class Notification {
     })
     priority: Priority;
 
-    @CreateDateColumn({ name: 'created_at' })
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
 
-    @Column({ name: 'queued_at', nullable: true })
+    @Column({ name: 'queued_at', type: 'timestamp', nullable: true })
     queuedAt?: Date;
 
-    @Column({ name: 'sent_at', nullable: true })
+    @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
     sentAt?: Date;
 
-    @Column({ name: 'failed_at', nullable: true })
+    @Column({ name: 'failed_at', type: 'timestamp', nullable: true })
     failedAt?: Date;
 
-    @Column({ name: 'delivered_at', nullable: true })
+    @Column({ name: 'delivered_at', type: 'timestamp', nullable: true })
     deliveredAt?: Date;
 
-    @Column({ name: 'retry_count', default: 0 })
+    @Column({ name: 'retry_count', type: 'integer', default: 0 })
     retryCount: number;
 
-    @Column({ name: 'max_retries', default: 3 })
+    @Column({ name: 'max_retries', type: 'integer', default: 3 })
     maxRetries: number;
 
-    @Column({ name: 'next_retry_at', nullable: true })
+    @Column({ name: 'next_retry_at', type: 'timestamp', nullable: true })
     nextRetryAt?: Date;
 
     @Column({ name: 'last_error', nullable: true, type: 'text' })

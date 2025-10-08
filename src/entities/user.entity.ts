@@ -21,23 +21,28 @@ export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ length: 50, unique: true })
+    @Column({ type: 'varchar', length: '50', unique: true })
     username: string;
 
-    @Column({ length: 255, unique: true })
+    @Column({ type: 'varchar', length: '255', unique: true })
     email: string;
 
-    @Column({ length: 20, nullable: true })
+    @Column({ type: 'varchar', length: '20', nullable: true })
     phone?: string;
 
     @Exclude()
-    @Column({ name: 'password_hash', length: 255 })
+    @Column({ name: 'password_hash', type: 'varchar', length: '255' })
     passwordHash: string;
 
     @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
     status: UserStatus;
 
-    @Column({ name: 'activation_token', length: 6, nullable: true })
+    @Column({
+        name: 'activation_token',
+        type: 'varchar',
+        length: '6',
+        nullable: true,
+    })
     activationToken?: string | null;
 
     @Column({

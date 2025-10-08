@@ -18,16 +18,16 @@ export class ApiKey {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'user_id' })
+    @Column({ name: 'user_id', type: 'uuid' })
     userId: string;
 
-    @Column({ name: 'key_hash', unique: true })
+    @Column({ name: 'key_hash', type: 'varchar', length: '255', unique: true })
     keyHash: string;
 
-    @Column({ length: 100 })
+    @Column({ type: 'varchar', length: '100' })
     label: string;
 
-    @Column({ name: 'expires_at', nullable: true })
+    @Column({ name: 'expires_at', type: 'timestamp', nullable: true })
     expiresAt?: Date;
 
     @Column({
@@ -37,16 +37,16 @@ export class ApiKey {
     })
     status: ApiKeyStatus;
 
-    @Column({ name: 'requests_count', default: 0 })
+    @Column({ name: 'requests_count', type: 'integer', default: 0 })
     requestsCount: number;
 
-    @Column({ name: 'rate_limit_per_minute', default: 100 })
+    @Column({ name: 'rate_limit_per_minute', type: 'integer', default: 100 })
     rateLimitPerMinute: number;
 
-    @CreateDateColumn({ name: 'created_at' })
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
 
-    @Column({ name: 'last_used_at', nullable: true })
+    @Column({ name: 'last_used_at', type: 'timestamp', nullable: true })
     lastUsedAt?: Date;
 
     // Relations
