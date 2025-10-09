@@ -273,9 +273,10 @@ export class AuthService {
         // TODO: Implement send activation email
 
         const baseUrl =
-            this.configService.get('API_URL') || 'http://localhost:4001';
+            this.configService.get('API_HOST_URL') || 'http://localhost';
+        const port = this.configService.get('API_PORT') || 4001;
         const apiPrefix = this.configService.get('API_PREFIX') || '/api/v1';
-        const activationUrl = `${baseUrl}${apiPrefix}/auth/register/activate?token=${token}`;
+        const activationUrl = `${baseUrl}:${port}${apiPrefix}/auth/register/activate?token=${token}`;
 
         this.logger.log(`Activation token for ${user.email}: ${token}`);
         this.logger.log(`Activation URL: ${activationUrl}`);
