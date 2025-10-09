@@ -1,6 +1,6 @@
 services:
     db:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         container_name: unified-notifications-db
         healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
@@ -36,6 +36,7 @@ services:
         stop_grace_period: 30s
         ports:
             - '${PORT}:${PORT}'
+            - 9229:9229
         environment:
             - NODE_ENV=${NODE_ENV}
             - PORT=${PORT}
