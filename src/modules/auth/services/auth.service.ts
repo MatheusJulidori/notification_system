@@ -48,8 +48,8 @@ export class AuthService {
             throw new BadRequestException('Passwords do not match');
         }
 
-        const saltRounds =
-            this.configService.get<number>('BCRYPT_ROUNDS') || 10;
+        const saltRounds = Number(
+            this.configService.get<number>('BCRYPT_ROUNDS')) || 10;
         const passwordHash = await bcrypt.hash(
             registerDto.password,
             saltRounds,
